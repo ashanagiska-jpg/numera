@@ -15,6 +15,7 @@ const DEFAULT_CLASSIFICATIONS=[
 {category:'SM',code:'SM.01.01',description:'Standar dan Program Pengembangan Kompetensi SDM Imipas'},{category:'PS',code:'PS.01.02',description:'Kajian Kebijakan / Policy Paper / Brief / Memo'}
 ];
 let classifications=[],letterLogs=[],tertiaryCounters={},settings={uptPrefix:'WP.6.PAS22',numberFormat:'pad4'},favoriteCodes=[],statCurrentPeriod='monthly';
+let agendaCurrentPage=1,agendaPageSize=25,agendaFilteredCache=[];
 function formatNomorSurat(n,len=4){return(parseInt(n,10)||0).toString().padStart(len,'0')}
 function getWIBDate(){return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'}))}
 function getWIBDateString(){const w=getWIBDate();return`${w.getFullYear()}-${String(w.getMonth()+1).padStart(2,'0')}-${String(w.getDate()).padStart(2,'0')}`}
@@ -103,16 +104,116 @@ function renderRecentLetters(){
     row.innerHTML=`<div class="w-9 h-9 rounded-xl bg-bank-50 dark:bg-bank-950/40 text-bank-600 dark:text-bank-400 flex items-center justify-center shrink-0 text-xs"><i class="fa-solid fa-file-lines"></i></div><div class="min-w-0 flex-1"><div class="font-mono text-[11px] font-bold text-navy-900 dark:text-white truncate">${log.fullNumber}</div><div class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(log.subject)}</div><div class="text-[10px] text-slate-400 mt-0.5">${formatIndonesianDate(log.date)} · ${escapeHtml(log.recipient)}</div></div><span class="px-2 py-0.5 rounded text-[9px] font-semibold shrink-0 ${getSifatBadgeColor(log.sifat)}">${log.sifat}</span>`;
     list.appendChild(row)});
 }
-function renderAgendaTable(){
-  const tbody=document.getElementById('agendaTableBody'),empty=document.getElementById('emptyState'),kw=(document.getElementById('searchKeyword').value||'').toLowerCase(),filterCode=document.getElementById('filterCodeCategory').value,dateFrom=document.getElementById('filterDateFrom')?.value||'',dateTo=document.getElementById('filterDateTo')?.value||'';
+function renderAgendaTable(resetPage){
+  if(resetPage) agendaCurrentPage=1;
+  const tbody=document.getElementById('agendaTableBody'),empty=document.getElementById('emptyState');
+  if(!tbody) return;
+  const kw=(document.getElementById('searchKeyword')?.value||'').toLowerCase();
+  const filterCode=document.getElementById('filterCodeCategory')?.value||'ALL';
+  const dateFrom=document.getElementById('filterDateFrom')?.value||'';
+  const dateTo=document.getElementById('filterDateTo')?.value||'';
+  const pageSizeEl=document.getElementById('agendaPageSize');
+  if(pageSizeEl) agendaPageSize=parseInt(pageSizeEl.value,10)||25;
+
+  agendaFilteredCache=letterLogs.filter(log=>{
+    const matchKw=(log.fullNumber||'').toLowerCase().includes(kw)||(log.recipient||'').toLowerCase().includes(kw)||(log.subject||'').toLowerCase().includes(kw);
+    const matchCode=filterCode==='ALL'||log.tertiaryCode===filterCode;
+    const matchFrom=!dateFrom||(log.date&&log.date>=dateFrom);
+    const matchTo=!dateTo||(log.date&&log.date<=dateTo);
+    return matchKw&&matchCode&&matchFrom&&matchTo;
+  });
+
+  const total=agendaFilteredCache.length;
+  const totalPages=Math.max(1, Math.ceil(total/agendaPageSize));
+  if(agendaCurrentPage>totalPages) agendaCurrentPage=totalPages;
+  if(agendaCurrentPage<1) agendaCurrentPage=1;
+
+  const startIdx=(agendaCurrentPage-1)*agendaPageSize;
+  const pageLogs=agendaFilteredCache.slice(startIdx, startIdx+agendaPageSize);
+
   tbody.innerHTML='';
-  let filtered=letterLogs.filter(log=>{const matchKw=(log.fullNumber||'').toLowerCase().includes(kw)||(log.recipient||'').toLowerCase().includes(kw)||(log.subject||'').toLowerCase().includes(kw);const matchCode=filterCode==='ALL'||log.tertiaryCode===filterCode;const matchFrom=!dateFrom||(log.date&&log.date>=dateFrom);const matchTo=!dateTo||(log.date&&log.date<=dateTo);return matchKw&&matchCode&&matchFrom&&matchTo});
-  const countEl=document.getElementById('agendaCount');if(countEl)countEl.innerText=filtered.length?`Menampilkan ${filtered.length} dari ${letterLogs.length} surat`:'';
-  if(!filtered.length){empty.classList.remove('hidden');return}empty.classList.add('hidden');
-  filtered.forEach((log,i)=>{const tr=document.createElement('tr');tr.className='hover:bg-slate-50 dark:hover:bg-navy-800/40 transition';
-    tr.innerHTML=`<td class="p-3 text-center font-semibold text-slate-400 tabular-nums">${i+1}</td><td class="p-3 font-mono font-bold text-bank-700 dark:text-bank-400 whitespace-nowrap text-[11px]">${log.fullNumber}</td><td class="p-3 whitespace-nowrap">${formatIndonesianDate(log.date)}</td><td class="p-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">${log.timestamp||'—'}</td><td class="p-3 font-medium max-w-[130px] truncate" title="${escapeHtml(log.recipient)}">${escapeHtml(log.recipient)}</td><td class="p-3 max-w-[150px] truncate" title="${escapeHtml(log.subject)}">${escapeHtml(log.subject)}</td><td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold ${getSifatBadgeColor(log.sifat)}">${log.sifat}</span></td><td class="p-3 text-slate-500 max-w-[90px] truncate">${escapeHtml(log.section)}</td><td class="p-3 text-center whitespace-nowrap no-print"><button onclick="copyTextToClipboard('${log.fullNumber}')" title="Salin" class="p-1.5 text-slate-400 hover:text-bank-600 transition"><i class="fa-solid fa-copy"></i></button><button onclick="previewLetterKop('${log.id}')" title="Kop" class="p-1.5 text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-file-lines"></i></button><button onclick="duplicateLetter('${log.id}')" title="Duplikat" class="p-1.5 text-slate-400 hover:text-violet-600 transition"><i class="fa-solid fa-clone"></i></button><button onclick="editLetter('${log.id}')" title="Edit" class="p-1.5 text-slate-400 hover:text-amber-600 transition"><i class="fa-solid fa-pen"></i></button><button onclick="deleteLetter('${log.id}')" title="Hapus" class="p-1.5 text-slate-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can"></i></button></td>`;
-    tbody.appendChild(tr)});
+  const countEl=document.getElementById('agendaCount');
+  if(countEl){
+    if(total===0) countEl.innerText='Tidak ada data';
+    else countEl.innerText=`Menampilkan ${startIdx+1}–${Math.min(startIdx+pageLogs.length,total)} dari ${total} surat`;
+  }
+
+  if(total===0){
+    empty?.classList.remove('hidden');
+    renderAgendaPagination(0);
+    return;
+  }
+  empty?.classList.add('hidden');
+
+  pageLogs.forEach((log,i)=>{
+    const rowNum=startIdx+i+1;
+    const tr=document.createElement('tr');
+    tr.className='hover:bg-slate-50 dark:hover:bg-navy-800/40 transition';
+    tr.innerHTML=`<td class="p-3 text-center font-semibold text-slate-400 tabular-nums">${rowNum}</td>
+      <td class="p-3 font-mono font-bold text-bank-700 dark:text-bank-400 whitespace-nowrap text-[11px]">${log.fullNumber||''}</td>
+      <td class="p-3 whitespace-nowrap">${formatIndonesianDate(log.date)}</td>
+      <td class="p-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">${log.timestamp||'—'}</td>
+      <td class="p-3 font-medium max-w-[130px] truncate" title="${escapeHtml(log.recipient)}">${escapeHtml(log.recipient)}</td>
+      <td class="p-3 max-w-[150px] truncate" title="${escapeHtml(log.subject)}">${escapeHtml(log.subject)}</td>
+      <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold ${getSifatBadgeColor(log.sifat)}">${log.sifat||''}</span></td>
+      <td class="p-3 text-slate-500 max-w-[90px] truncate">${escapeHtml(log.section)}</td>
+      <td class="p-3 text-center whitespace-nowrap no-print">
+        <button onclick="copyTextToClipboard('${(log.fullNumber||'').replace(/'/g,"\\'")}')" title="Salin" class="p-1.5 text-slate-400 hover:text-bank-600 transition"><i class="fa-solid fa-copy"></i></button>
+        <button onclick="previewLetterKop('${log.id}')" title="Kop" class="p-1.5 text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-file-lines"></i></button>
+        <button onclick="duplicateLetter('${log.id}')" title="Duplikat" class="p-1.5 text-slate-400 hover:text-violet-600 transition"><i class="fa-solid fa-clone"></i></button>
+        <button onclick="editLetter('${log.id}')" title="Edit" class="p-1.5 text-slate-400 hover:text-amber-600 transition"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteLetter('${log.id}')" title="Hapus" class="p-1.5 text-slate-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can"></i></button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  renderAgendaPagination(totalPages);
 }
+
+function renderAgendaPagination(totalPages){
+  const box=document.getElementById('agendaPagination');
+  if(!box) return;
+  if(totalPages<=1){ box.innerHTML=''; return; }
+  const btn=(label, page, disabled, active)=>`<button type="button" ${disabled?'disabled':''} onclick="goAgendaPage(${page})" class="min-w-[32px] h-8 px-2 rounded-lg text-xs font-semibold transition ${active?'bg-bank-600 text-white shadow':'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'} ${disabled?'opacity-40 cursor-not-allowed':''}">${label}</button>`;
+  let html=btn('‹', agendaCurrentPage-1, agendaCurrentPage<=1, false);
+  const windowSize=5;
+  let from=Math.max(1, agendaCurrentPage-Math.floor(windowSize/2));
+  let to=Math.min(totalPages, from+windowSize-1);
+  from=Math.max(1, to-windowSize+1);
+  if(from>1) html+=btn('1',1,false,false)+(from>2?'<span class="px-1 text-slate-400 text-xs">…</span>':'');
+  for(let p=from;p<=to;p++) html+=btn(String(p),p,false,p===agendaCurrentPage);
+  if(to<totalPages) html+=(to<totalPages-1?'<span class="px-1 text-slate-400 text-xs">…</span>':'')+btn(String(totalPages),totalPages,false,false);
+  html+=btn('›', agendaCurrentPage+1, agendaCurrentPage>=totalPages, false);
+  box.innerHTML=html;
+}
+
+function goAgendaPage(page){
+  agendaCurrentPage=page;
+  renderAgendaTable(false);
+}
+
+function changeAgendaPageSize(){
+  agendaCurrentPage=1;
+  renderAgendaTable(false);
+}
+
+function getAgendaFilteredLogs(){
+  // gunakan cache jika sudah ada, else hitung ulang
+  if(agendaFilteredCache && agendaFilteredCache.length>=0 && document.getElementById('agendaTableBody')){
+    // recompute to be safe
+  }
+  const kw=(document.getElementById('searchKeyword')?.value||'').toLowerCase();
+  const filterCode=document.getElementById('filterCodeCategory')?.value||'ALL';
+  const dateFrom=document.getElementById('filterDateFrom')?.value||'';
+  const dateTo=document.getElementById('filterDateTo')?.value||'';
+  return letterLogs.filter(log=>{
+    const matchKw=(log.fullNumber||'').toLowerCase().includes(kw)||(log.recipient||'').toLowerCase().includes(kw)||(log.subject||'').toLowerCase().includes(kw);
+    const matchCode=filterCode==='ALL'||log.tertiaryCode===filterCode;
+    const matchFrom=!dateFrom||(log.date&&log.date>=dateFrom);
+    const matchTo=!dateTo||(log.date&&log.date<=dateTo);
+    return matchKw&&matchCode&&matchFrom&&matchTo;
+  });
+}
+
 function renderCounterGrid(){
   const grid=document.getElementById('counterGrid');grid.innerHTML='';
   classifications.forEach(item=>{const cur=tertiaryCounters[item.code]||0,next=cur+1,isFav=favoriteCodes.includes(item.code);
@@ -150,7 +251,6 @@ function updateEditPreviewFullNumber(){const p=document.getElementById('editPref
 async function saveEditedLetter(){const id=document.getElementById('editLetterId').value,idx=letterLogs.findIndex(l=>l.id===id);if(idx<0){showToast('Tidak ditemukan','error');return}const seq=document.getElementById('editInputSequence').value.trim();if(!seq){showToast('Nomor urut wajib diisi','error');return}const cur=letterLogs[idx],prefix=`${cur.uptPrefix||settings.uptPrefix}.${cur.tertiaryCode||''}`,full=`${prefix}-${seq}`;if(letterLogs.some(l=>l.id!==id&&l.fullNumber===full)){showToast('Nomor sudah dipakai','error');return}const parsed=parseInt(seq,10);const fields={date:document.getElementById('editInputDate').value,sifat:document.getElementById('editInputSifat').value,lampiran:document.getElementById('editInputLampiran').value||'—',recipient:document.getElementById('editInputRecipient').value,subject:document.getElementById('editInputSubject').value,section:document.getElementById('editInputSection').value,notes:document.getElementById('editInputNotes').value||'—',formattedSequence:seq,fullNumber:full,counterNumber:isNaN(parsed)?cur.counterNumber:parsed};letterLogs[idx]={...letterLogs[idx],...fields};recalculateTertiaryCounters();saveStateToStorage();renderAgendaTable();renderDashboardStats();renderCounterGrid();renderRecentLetters();updateNumberPreview();closeEditLetterModal();showToast('Menyimpan…','info');try{await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',id,...fields})});showToast('Perubahan tersimpan')}catch(e){showToast('Lokal OK, gagal sinkron','error')}}
 function duplicateLetter(id){const log=letterLogs.find(l=>l.id===id);if(!log)return;switchTab('tab-generate');const item=classifications.find(c=>c.code===log.tertiaryCode);if(item){document.getElementById('selectMainCategory').value=item.category;populateClassificationOptions();document.getElementById('selectClassification').value=log.tertiaryCode}document.getElementById('inputSifat').value=log.sifat||'Biasa';document.getElementById('inputLampiran').value=log.lampiran||'';document.getElementById('inputRecipient').value=log.recipient||'';document.getElementById('inputSubject').value=log.subject||'';document.getElementById('inputSection').value=log.section||'';document.getElementById('inputNotes').value=log.notes||'';setTodayDateInForm();updateNumberPreview();showToast('Form diisi dari surat sebelumnya. Nomor baru di-generate saat simpan.','info')}
 async function deleteLetter(id){if(!confirm('Hapus arsip surat ini?'))return;letterLogs=letterLogs.filter(l=>l.id!==id);recalculateTertiaryCounters();saveStateToStorage();renderAgendaTable();renderDashboardStats();renderCounterGrid();renderRecentLetters();updateNumberPreview();showToast('Menghapus…','info');try{await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});showToast('Berhasil dihapus')}catch(e){showToast('Lokal OK, gagal sinkron','error')}}
-/* exportToCSV diganti di bawah (versi terfilter) */let csv="data:text/csv;charset=utf-8,";csv+="No,Nomor Surat,Tanggal,Waktu Input,Sifat,Lampiran,Tujuan,Perihal,Seksi,Catatan\n";letterLogs.forEach((l,i)=>{csv+=[i+1,`"${l.fullNumber}"`,`"${l.date}"`,`"${l.timestamp||''}"`,`"${l.sifat}"`,`"${l.lampiran}"`,`"${(l.recipient||'').replace(/"/g,'""')}"`,`"${(l.subject||'').replace(/"/g,'""')}"`,`"${l.section}"`,`"${(l.notes||'').replace(/"/g,'""')}"`].join(',')+'\n'});const a=document.createElement('a');a.href=encodeURI(csv);a.download=`Agenda_Surat_Bapas_Lahat_${getWIBDateString()}.csv`;a.click()}
 function exportJSONBackup(){const data={exportedAt:getWIBFullTimestamp(),version:2,settings,classifications,letterLogs,favoriteCodes};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Backup_Bapas_Lahat_${getWIBDateString()}.json`;a.click();showToast('Backup JSON diunduh')}
 function importJSONBackup(event){const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const data=JSON.parse(e.target.result);if(!data.letterLogs&&!data.classifications)throw new Error('Format tidak valid');if(!confirm(`Impor backup? Data saat ini diganti.\nSurat: ${(data.letterLogs||[]).length} · Kode: ${(data.classifications||[]).length}`))return;if(data.classifications)classifications=data.classifications;if(data.letterLogs)letterLogs=data.letterLogs;if(data.settings)settings={...settings,...data.settings};if(data.favoriteCodes)favoriteCodes=data.favoriteCodes;recalculateTertiaryCounters();saveStateToStorage();populateClassificationOptions();updateNumberPreview();renderDashboardStats();renderAgendaTable();renderCounterGrid();renderRecentLetters();renderFavoriteCodes();showToast('Backup berhasil diimpor')}catch(err){showToast('File tidak valid: '+err.message,'error')}event.target.value=''};reader.readAsText(file)}
 function saveSettings(){settings.numberFormat=document.getElementById('settingNumberFormat').value;saveStateToStorage();updateNumberPreview();renderCounterGrid();showToast('Pengaturan disimpan')}
@@ -346,4 +446,119 @@ function exportToCSV() {
   }
   downloadCSV(letterLogs, 'ALL', { label: 'Semua' });
   showToast('CSV agenda diunduh');
+}
+
+
+/* ===== EKSPOR EXCEL & PDF ===== */
+function logsToSheetRows(logs){
+  const header=['No','Nomor Surat','Tanggal','Waktu Input','Sifat','Lampiran','Tujuan','Perihal','Seksi','Catatan','Kode Tersier'];
+  const rows=[header];
+  logs.forEach((l,i)=>{
+    rows.push([
+      i+1,
+      l.fullNumber||'',
+      l.date||'',
+      l.timestamp||'',
+      l.sifat||'',
+      l.lampiran||'',
+      l.recipient||'',
+      l.subject||'',
+      l.section||'',
+      l.notes||'',
+      l.tertiaryCode||''
+    ]);
+  });
+  return rows;
+}
+
+function exportLogsToExcel(logs, filenameBase){
+  if(typeof XLSX==='undefined'){ showToast('Library Excel belum termuat','error'); return; }
+  if(!logs.length){ showToast('Tidak ada data untuk diekspor','error'); return; }
+  const rows=logsToSheetRows(logs);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  // lebar kolom kasar
+  ws['!cols']=[{wch:5},{wch:28},{wch:12},{wch:20},{wch:12},{wch:12},{wch:30},{wch:35},{wch:20},{wch:18},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Agenda Surat');
+  XLSX.writeFile(wb, (filenameBase||'Agenda_Bapas_Lahat')+'_'+getWIBDateString()+'.xlsx');
+  showToast('File Excel diunduh ('+logs.length+' surat)');
+}
+
+function exportLogsToPDF(logs, titleExtra){
+  if(typeof window.jspdf==='undefined' && typeof jspdf==='undefined'){ showToast('Library PDF belum termuat','error'); return; }
+  if(!logs.length){ showToast('Tidak ada data untuk diekspor','error'); return; }
+  const { jsPDF } = window.jspdf || jspdf;
+  const doc=new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const title='Agenda Surat Keluar — Bapas Kelas II Lahat';
+  doc.setFontSize(12);
+  doc.setFont('helvetica','bold');
+  doc.text(title, 14, 12);
+  doc.setFontSize(8);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(100);
+  doc.text((titleExtra||'')+' · Dicetak: '+getWIBFullTimestamp()+' · WP.6.PAS22', 14, 17);
+  doc.setTextColor(0);
+
+  const body=logs.map((l,i)=>[
+    String(i+1),
+    l.fullNumber||'',
+    formatIndonesianDate(l.date),
+    l.sifat||'',
+    (l.recipient||'').substring(0,40),
+    (l.subject||'').substring(0,45),
+    l.tertiaryCode||''
+  ]);
+
+  doc.autoTable({
+    startY: 20,
+    head: [['No','Nomor Surat','Tanggal','Sifat','Tujuan','Perihal','Kode']],
+    body,
+    styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+    headStyles: { fillColor: [15, 26, 46], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 45, fontStyle: 'bold' },
+      2: { cellWidth: 28 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 50 },
+      5: { cellWidth: 55 },
+      6: { cellWidth: 22 }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  const pageCount=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    doc.setFontSize(7);
+    doc.setTextColor(150);
+    doc.text('Halaman '+p+' / '+pageCount, doc.internal.pageSize.getWidth()-14, doc.internal.pageSize.getHeight()-8, { align:'right' });
+  }
+
+  doc.save('Agenda_Bapas_Lahat_'+(titleExtra?titleExtra.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_\-]/g,''):'Semua')+'_'+getWIBDateString()+'.pdf');
+  showToast('File PDF diunduh ('+logs.length+' surat)');
+}
+
+function exportAgendaExcel(){
+  const logs=getAgendaFilteredLogs();
+  exportLogsToExcel(logs, 'Agenda_Filter');
+}
+function exportAgendaPDF(){
+  const logs=getAgendaFilteredLogs();
+  exportLogsToPDF(logs, 'Filter Agenda');
+}
+function exportFilteredExcel(){
+  const logs=getFilteredLettersForExport();
+  const code=document.getElementById('exportCodeSelect')?.value||'ALL';
+  const range=getExportDateRange();
+  const name='Agenda_'+(code==='ALL'?'SemuaKode':code.replace(/\./g,'_'))+'_'+(range.label||'').replace(/\s+/g,'_');
+  exportLogsToExcel(logs, name);
+}
+function exportFilteredPDF(){
+  const logs=getFilteredLettersForExport();
+  const code=document.getElementById('exportCodeSelect')?.value||'ALL';
+  const range=getExportDateRange();
+  const label=(code==='ALL'?'Semua kode':code)+' · '+(range.label||'');
+  exportLogsToPDF(logs, label);
 }
