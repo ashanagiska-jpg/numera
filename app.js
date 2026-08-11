@@ -1,4 +1,6 @@
 const WEB_APP_URL="https://script.google.com/macros/s/AKfycbwu52Wq9KXt-O1xswSrubKUHQRDLfNN0NmwmgpchkRBiv5wAnHT3HT-_r8_IIJNTRslTA/exec";
+const CLASSIFICATIONS_URL = WEB_APP_URL + (WEB_APP_URL.indexOf('?')>=0 ? '&' : '?') + 'type=classifications';
+const MASTER_SHEET_ID = '10dP7KWmgaQ1D8BqVKmyHSMFb_BUyXZXpF9yDJbPwpXg';
 const DEFAULT_CLASSIFICATIONS=[
 {category:'PR',code:'PR.01.01',description:'Rencana pembangunan jangka panjang'},{category:'PR',code:'PR.01.02',description:'Rencana pembangunan jangka menengah'},{category:'PR',code:'PR.01.03',description:'Rencana strategis kementerian'},{category:'PR',code:'PR.01.04',description:'Rencana strategis satuan kerja'},{category:'PR',code:'PR.01.06',description:'Rencana kerja'},{category:'PR',code:'PR.01.07',description:'Rencana kerja dan anggaran'},{category:'PR',code:'PR.04.02',description:'Laporan Tahunan'},
 {category:'KU',code:'KU.01.01',description:'Pedoman, Petunjuk, dan Administrasi Pelaksanaan Anggaran'},{category:'KU',code:'KU.01.02',description:'Daftar Isian Pelaksanaan Anggaran (DIPA)'},{category:'KU',code:'KU.01.03',description:'Penerimaan Negara Bukan Pajak (PNBP)'},{category:'KU',code:'KU.03.01',description:'Pertanggungjawaban Belanja'},{category:'KU',code:'KU.04.01',description:'Laporan Keuangan'},
@@ -26,10 +28,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(localStorage.getItem('bapas_dark')==='1'||(!localStorage.getItem('bapas_dark')&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');
   loadStateFromStorage();setTodayDateInForm();populateClassificationOptions();onExportPeriodTypeChange();updateExportPreview();updateNumberPreview();
   renderDashboardStats();renderAgendaTable();renderCounterGrid();renderRecentLetters();renderFavoriteCodes();
-  setStatPeriod('monthly');startLiveWIBClock();fetchDataFromGoogleSheets();startAutoSync();updateRecipientSuggestions();
+  setStatPeriod('monthly');startLiveWIBClock();fetchClassificationsFromSheets(true).then(function(){fetchDataFromGoogleSheets();});startAutoSync();updateRecipientSuggestions();
 });
 const AUTO_SYNC_INTERVAL_MS=15000;let autoSyncTimer=null,isSyncing=false;
-function startAutoSync(){if(autoSyncTimer)clearInterval(autoSyncTimer);autoSyncTimer=setInterval(()=>{if(document.visibilityState==='visible')fetchDataFromGoogleSheets(true)},AUTO_SYNC_INTERVAL_MS)}
+function startAutoSync(){if(autoSyncTimer)clearInterval(autoSyncTimer);autoSyncTimer=setInterval(()=>{if(document.visibilityState==='visible'){fetchClassificationsFromSheets(true);fetchDataFromGoogleSheets(true);}},AUTO_SYNC_INTERVAL_MS)}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')fetchDataFromGoogleSheets(true)});
 function loadStateFromStorage(){
   const sc=localStorage.getItem('bapas_classifications');classifications=sc?JSON.parse(sc):[...DEFAULT_CLASSIFICATIONS];if(!sc)localStorage.setItem('bapas_classifications',JSON.stringify(classifications));
@@ -76,6 +78,41 @@ async function saveLetter(){
   updateNumberPreview();renderDashboardStats();renderAgendaTable();renderCounterGrid();renderRecentLetters();updateRecipientSuggestions();copyTextToClipboard(fullNum);playSuccessSound();
   try{await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(letterData)});showToast('Berhasil disimpan!');markSynced()}catch(e){showToast('Tersimpan lokal, gagal sinkron','error')}
 }
+
+async function fetchClassificationsFromSheets(silent){
+  if(!WEB_APP_URL || WEB_APP_URL.indexOf('AKfycb...')>=0) return false;
+  try{
+    const res = await fetch(CLASSIFICATIONS_URL, { method:'GET', cache:'no-store' });
+    const result = await res.json();
+    if(result && result.result==='success' && Array.isArray(result.data)){
+      const mapped = result.data
+        .filter(r => r && (r.code || r.Kode))
+        .map(r => ({
+          category: String(r.category || r.Kategori || '').trim() || 'UM',
+          code: String(r.code || r.Kode || '').trim().toUpperCase(),
+          description: String(r.description || r.Deskripsi || '').trim()
+        }))
+        .filter(r => r.code);
+      if(mapped.length){
+        classifications = mapped;
+        recalculateTertiaryCounters();
+        saveStateToStorage();
+        populateClassificationOptions();
+        renderCounterGrid();
+        renderDashboardStats();
+        renderFavoriteCodes();
+        if(typeof updateExportPreview==='function') updateExportPreview();
+        if(!silent) showToast('Klasifikasi dimuat dari Master Sheet ('+mapped.length+' kode)');
+        return true;
+      }
+    }
+  }catch(err){
+    console.log('Gagal muat klasifikasi dari Sheet:', err);
+    if(!silent) showToast('Gagal muat Master Klasifikasi, pakai data lokal','error');
+  }
+  return false;
+}
+
 async function fetchDataFromGoogleSheets(silent=false){
   if(!WEB_APP_URL||WEB_APP_URL.includes('AKfycb...'))return;if(isSyncing)return;isSyncing=true;
   const icon=document.getElementById('syncBtnIcon');if(icon)icon.classList.add('fa-spin');
@@ -113,7 +150,7 @@ function renderAgendaTable(resetPage){
   const dateFrom=document.getElementById('filterDateFrom')?.value||'';
   const dateTo=document.getElementById('filterDateTo')?.value||'';
   const pageSizeEl=document.getElementById('agendaPageSize');
-  if(pageSizeEl) agendaPageSize=parseInt(pageSizeEl.value,10)||25;
+  if(pageSizeEl){ const ps=parseInt(pageSizeEl.value,10); agendaPageSize=(ps>0?ps:25); } else if(!agendaPageSize||agendaPageSize<1){ agendaPageSize=25; }
 
   agendaFilteredCache=letterLogs.filter(log=>{
     const matchKw=(log.fullNumber||'').toLowerCase().includes(kw)||(log.recipient||'').toLowerCase().includes(kw)||(log.subject||'').toLowerCase().includes(kw);
@@ -140,7 +177,7 @@ function renderAgendaTable(resetPage){
 
   if(total===0){
     empty?.classList.remove('hidden');
-    renderAgendaPagination(0);
+    renderAgendaPagination(0, 0);
     return;
   }
   empty?.classList.add('hidden');
@@ -166,13 +203,16 @@ function renderAgendaTable(resetPage){
       </td>`;
     tbody.appendChild(tr);
   });
-  renderAgendaPagination(totalPages);
+  renderAgendaPagination(totalPages, total);
 }
 
-function renderAgendaPagination(totalPages){
+function renderAgendaPagination(totalPages, total){
   const box=document.getElementById('agendaPagination');
   if(!box) return;
-  if(totalPages<=1){ box.innerHTML=''; return; }
+  if(totalPages<=1){
+    box.innerHTML = (total>0 && agendaPageSize>=total) ? '<span class="text-[11px] text-slate-400 px-2">1 halaman</span>' : '';
+    return;
+  }
   const btn=(label, page, disabled, active)=>`<button type="button" ${disabled?'disabled':''} onclick="goAgendaPage(${page})" class="min-w-[32px] h-8 px-2 rounded-lg text-xs font-semibold transition ${active?'bg-bank-600 text-white shadow':'bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-700'} ${disabled?'opacity-40 cursor-not-allowed':''}">${label}</button>`;
   let html=btn('‹', agendaCurrentPage-1, agendaCurrentPage<=1, false);
   const windowSize=5;
@@ -192,6 +232,8 @@ function goAgendaPage(page){
 }
 
 function changeAgendaPageSize(){
+  const el=document.getElementById('agendaPageSize');
+  agendaPageSize=parseInt(el&&el.value,10)||25;
   agendaCurrentPage=1;
   renderAgendaTable(false);
 }
@@ -257,7 +299,19 @@ function saveSettings(){settings.numberFormat=document.getElementById('settingNu
 function copyGeneratedNumber(){copyTextToClipboard(document.getElementById('previewFullNumber').innerText)}
 function copyTextToClipboard(text){if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text);else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)}showToast(`Disalin: ${text}`)}
 function clearAllData(){if(!confirm('Hapus SELURUH data arsip dan counter?'))return;letterLogs=[];recalculateTertiaryCounters();saveStateToStorage();renderAgendaTable();renderDashboardStats();renderCounterGrid();renderRecentLetters();updateNumberPreview();showToast('Data dibersihkan','error')}
-function restoreDefaultData(){if(!confirm('Muat ulang klasifikasi default?'))return;classifications=[...DEFAULT_CLASSIFICATIONS];saveStateToStorage();populateClassificationOptions();renderCounterGrid();showToast('Klasifikasi default dipulihkan')}
+function restoreDefaultData(){
+  if(!confirm('Muat ulang klasifikasi dari Google Sheet Master Klasifikasi?')) return;
+  showToast('Mengambil Master Klasifikasi…','info');
+  fetchClassificationsFromSheets(false).then(function(ok){
+    if(!ok){
+      classifications=[...DEFAULT_CLASSIFICATIONS];
+      saveStateToStorage();
+      populateClassificationOptions();
+      renderCounterGrid();
+      showToast('Sheet tidak tersedia, pakai data default lokal','error');
+    }
+  });
+}
 function updateRecipientSuggestions(){const dl=document.getElementById('recipientSuggestions');if(!dl)return;const unique=[...new Set(letterLogs.map(l=>l.recipient).filter(Boolean))].slice(0,30);dl.innerHTML=unique.map(r=>`<option value="${escapeHtml(r)}">`).join('')}
 function handleGlobalSearch(){const q=(document.getElementById('globalSearch').value||'').toLowerCase().trim(),box=document.getElementById('globalSearchResults');if(!q||q.length<2){box.classList.add('hidden');return}const hits=letterLogs.filter(l=>(l.fullNumber||'').toLowerCase().includes(q)||(l.recipient||'').toLowerCase().includes(q)||(l.subject||'').toLowerCase().includes(q)).slice(0,8);if(!hits.length){box.innerHTML='<div class="p-3 text-xs text-slate-400">Tidak ditemukan</div>';box.classList.remove('hidden');return}box.innerHTML=hits.map(l=>`<button onclick="previewLetterKop('${l.id}');document.getElementById('globalSearchResults').classList.add('hidden');document.getElementById('globalSearch').value=''" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-navy-800 border-b border-slate-100 dark:border-navy-800 last:border-0 transition"><div class="font-mono text-[11px] font-bold text-bank-700 dark:text-bank-400">${l.fullNumber}</div><div class="text-xs text-slate-500 truncate">${escapeHtml(l.subject)}</div></button>`).join('');box.classList.remove('hidden')}
 document.addEventListener('click',e=>{if(!e.target.closest('#globalSearch')&&!e.target.closest('#globalSearchResults'))document.getElementById('globalSearchResults')?.classList.add('hidden')});
