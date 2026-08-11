@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Penomoran Surat Keluar — Bapas Kelas II Lahat</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c8ce9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bapas Lahat">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],mono:['"JetBrains Mono"','monospace']},colors:{bank:{50:'#f0f7ff',100:'#e0effe',400:'#36a7f6',500:'#0c8ce9',600:'#006fc7',700:'#0158a1',800:'#064b85',900:'#0b3f6e'},navy:{800:'#1a2744',900:'#0f1a2e',950:'#0a1120'}},boxShadow:{bank:'0 1px 3px rgba(15,26,46,.04),0 4px 16px rgba(15,26,46,.06)','bank-lg':'0 4px 24px rgba(15,26,46,.08)'}}}}
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-full bg-slate-100 dark:bg-navy-950 text-slate-800 dark:text-slate-200 font-sans antialiased">
+<div class="flex h-full min-h-screen">
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="no-print fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-navy-800 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0 shadow-bank">
+  <div class="h-16 flex items-center gap-3 px-5 border-b border-slate-100 dark:border-navy-800 shrink-0">
+    <div class="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 bg-white border border-slate-200 dark:border-navy-700">
+  <img src="logo.png" alt="Logo Bapas Lahat" class="w-full h-full object-contain p-0.5">
+</div>
+    <div><div class="text-sm font-bold text-navy-900 dark:text-white leading-tight">Bapas Lahat</div><div class="text-[10px] text-slate-400 font-medium">WP.6.PAS22</div></div>
+  </div>
+  <nav class="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-0.5">
+    <p class="px-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Menu Utama</p>
+    <button onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="nav-item active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"><i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i><span>Dashboard</span></button>
+    <button onclick="switchTab('tab-generate')" id="btn-tab-generate" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-pen-to-square w-5 text-center text-sm"></i><span>Buat Nomor Surat</span></button>
+    <button onclick="switchTab('tab-agenda')" id="btn-tab-agenda" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-book-bookmark w-5 text-center text-sm"></i><span>Agenda Surat</span></button>
+    <button onclick="switchTab('tab-counters')" id="btn-tab-counters" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-list-ol w-5 text-center text-sm"></i><span>Kode & Counter</span></button>
+    <button onclick="switchTab('tab-statistik')" id="btn-tab-statistik" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-chart-column w-5 text-center text-sm"></i><span>Statistik</span></button>
+    <div class="pt-4 mt-2 border-t border-slate-100 dark:border-navy-800">
+      <p class="px-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Sistem</p>
+      <button onclick="switchTab('tab-tools')" id="btn-tab-tools" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-toolbox w-5 text-center text-sm"></i><span>Alat & Backup</span></button>
+      <button onclick="switchTab('tab-settings')" id="btn-tab-settings" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-sliders w-5 text-center text-sm"></i><span>Pengaturan</span></button>
+      <button onclick="toggleGuidelineModal()" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300"><i class="fa-solid fa-scale-balanced w-5 text-center text-sm"></i><span>Pedoman SE</span></button>
+    </div>
+  </nav>
+  <div class="p-4 border-t border-slate-100 dark:border-navy-800 shrink-0">
+    <div class="flex items-center gap-2.5">
+      <div id="syncIndicator" class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot shrink-0"></div>
+      <div><div class="text-[11px] font-medium text-slate-600 dark:text-slate-300">Sinkron aktif</div><div id="lastSyncLabel" class="text-[10px] text-slate-400">Belum sinkron</div></div>
+    </div>
+  </div>
+</aside>
+<div id="sidebarOverlay" onclick="closeMobileSidebar()" class="fixed inset-0 bg-navy-950/50 z-30 hidden lg:hidden no-print"></div>
+
+<!-- MAIN -->
+<div class="flex-1 flex flex-col min-w-0 lg:ml-64">
+  <!-- Top bar -->
+  <header class="no-print sticky top-0 z-30 h-16 bg-white/90 dark:bg-navy-900/90 backdrop-blur-md border-b border-slate-200 dark:border-navy-800 flex items-center justify-between px-4 sm:px-6 gap-4">
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <button onclick="openMobileSidebar()" class="lg:hidden w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 flex items-center justify-center text-slate-500"><i class="fa-solid fa-bars"></i></button>
+      <div class="relative flex-1 max-w-md hidden sm:block">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" id="globalSearch" oninput="handleGlobalSearch()" placeholder="Cari nomor, perihal, atau tujuan…" class="input-field w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-xl text-sm outline-none">
+        <div id="globalSearchResults" class="hidden absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-xl shadow-bank-lg max-h-72 overflow-y-auto custom-scrollbar z-50"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-navy-800 rounded-xl border border-slate-200 dark:border-navy-700">
+        <i class="fa-regular fa-clock text-slate-400 text-xs"></i>
+        <span id="liveClockDisplay" class="font-mono text-xs font-semibold text-bank-600 dark:text-bank-400 tabular-nums">--:--:--</span>
+        <span class="text-[10px] text-slate-400">WIB</span>
+      </div>
+      <button onclick="fetchDataFromGoogleSheets(false)" title="Sinkronkan" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 flex items-center justify-center text-slate-500"><i class="fa-solid fa-arrows-rotate text-sm" id="syncBtnIcon"></i></button>
+      <button onclick="toggleDarkMode()" title="Mode gelap" class="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-navy-800 flex items-center justify-center text-slate-500"><i class="fa-solid fa-moon text-sm dark:hidden"></i><i class="fa-solid fa-sun text-sm hidden dark:inline"></i></button>
+      <div class="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-navy-700">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-bank-400 to-bank-700 flex items-center justify-center text-white text-xs font-bold">BL</div>
+        <div class="hidden lg:block"><div class="text-xs font-semibold text-navy-900 dark:text-white leading-tight">Operator</div><div class="text-[10px] text-slate-400">Bapas Kelas II Lahat</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="no-print bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200/80 dark:border-amber-800/40 text-amber-950 dark:text-amber-200 text-xs px-4 sm:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
+    <div class="flex items-center gap-2"><span class="bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded text-[9px] uppercase">SE</span><span>Reset nomor urut <strong>per Kode Tersier</strong> · SK WP.6-0763.UM.01.01 Th. 2026 · Permen Imipas No. 8/2026</span></div>
+    <button onclick="toggleGuidelineModal()" class="text-amber-700 dark:text-amber-300 font-semibold underline underline-offset-2 shrink-0">Ketentuan lengkap</button>
+  </div>
+
+  <main class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content fade-slide space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Dashboard</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Ringkasan aktivitas penomoran surat keluar</p></div>
+        <button onclick="switchTab('tab-generate')" class="btn-primary px-4 py-2.5 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm"><i class="fa-solid fa-plus text-xs"></i> Buat Nomor Baru</button>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div onclick="openStatDetailModal('today')" class="bg-white dark:bg-navy-900 rounded-2xl p-5 shadow-bank border border-slate-200/80 dark:border-navy-800 cursor-pointer hover:shadow-bank-lg hover:-translate-y-0.5 transition group">
+          <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-bank-600 dark:text-bank-400 flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></div><span class="text-[10px] font-semibold text-slate-400 uppercase">Hari ini</span></div>
+          <div id="statToday" class="text-3xl font-bold text-navy-900 dark:text-white tabular-nums">0</div><p class="text-xs text-slate-500 mt-1">Surat keluar</p>
+        </div>
+        <div onclick="openStatDetailModal('month')" class="bg-white dark:bg-navy-900 rounded-2xl p-5 shadow-bank border border-slate-200/80 dark:border-navy-800 cursor-pointer hover:shadow-bank-lg hover:-translate-y-0.5 transition">
+          <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-calendar-check"></i></div><span class="text-[10px] font-semibold text-slate-400 uppercase">Bulan ini</span></div>
+          <div id="statMonth" class="text-3xl font-bold text-navy-900 dark:text-white tabular-nums">0</div><p class="text-xs text-slate-500 mt-1">Total surat</p>
+        </div>
+        <div onclick="switchTab('tab-counters')" class="bg-white dark:bg-navy-900 rounded-2xl p-5 shadow-bank border border-slate-200/80 dark:border-navy-800 cursor-pointer hover:shadow-bank-lg hover:-translate-y-0.5 transition">
+          <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/50 text-violet-600 flex items-center justify-center"><i class="fa-solid fa-folder-tree"></i></div><span class="text-[10px] font-semibold text-slate-400 uppercase">Aktif</span></div>
+          <div id="statCodes" class="text-3xl font-bold text-navy-900 dark:text-white tabular-nums">0</div><p class="text-xs text-slate-500 mt-1">Kode klasifikasi</p>
+        </div>
+        <div class="bg-white dark:bg-navy-900 rounded-2xl p-5 shadow-bank border border-slate-200/80 dark:border-navy-800">
+          <div class="flex items-center justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-stamp"></i></div><span class="text-[10px] font-semibold text-slate-400 uppercase">UPT</span></div>
+          <div class="text-lg font-bold text-navy-900 dark:text-white font-mono">WP.6.PAS22</div><p class="text-xs text-slate-500 mt-1">Kode Bapas Lahat</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 dark:border-navy-800 flex items-center justify-between"><h2 class="text-sm font-bold text-navy-900 dark:text-white">Surat Terbaru</h2><button onclick="switchTab('tab-agenda')" class="text-xs font-semibold text-bank-600 dark:text-bank-400 hover:underline">Lihat semua</button></div>
+          <div id="recentLettersList" class="divide-y divide-slate-100 dark:divide-navy-800"></div>
+          <div id="recentEmpty" class="hidden py-12 text-center"><i class="fa-solid fa-inbox text-3xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-sm text-slate-400">Belum ada surat</p></div>
+        </div>
+        <div class="space-y-4">
+          <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+            <h2 class="text-sm font-bold text-navy-900 dark:text-white mb-3">Aksi Cepat</h2>
+            <div class="space-y-2">
+              <button onclick="switchTab('tab-generate')" class="w-full flex items-center gap-3 p-3 rounded-xl bg-bank-50 dark:bg-bank-950/40 hover:bg-bank-100 transition text-left"><div class="w-8 h-8 rounded-lg bg-bank-500 text-white flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></div><div><div class="text-xs font-semibold text-navy-900 dark:text-white">Terbitkan nomor</div><div class="text-[10px] text-slate-400">Form penomoran</div></div></button>
+              <button onclick="exportToCSV()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-navy-800 hover:bg-slate-100 dark:hover:bg-navy-700 transition text-left"><div class="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs"><i class="fa-solid fa-file-excel"></i></div><div><div class="text-xs font-semibold text-navy-900 dark:text-white">Ekspor agenda</div><div class="text-[10px] text-slate-400">Unduh CSV</div></div></button>
+              <button onclick="exportJSONBackup()" class="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-navy-800 hover:bg-slate-100 dark:hover:bg-navy-700 transition text-left"><div class="w-8 h-8 rounded-lg bg-violet-500 text-white flex items-center justify-center text-xs"><i class="fa-solid fa-download"></i></div><div><div class="text-xs font-semibold text-navy-900 dark:text-white">Backup JSON</div><div class="text-[10px] text-slate-400">Cadangan data</div></div></button>
+            </div>
+          </div>
+          <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+            <h2 class="text-sm font-bold text-navy-900 dark:text-white mb-3">Kode Favorit</h2>
+            <div id="favoriteCodesList" class="space-y-1.5"><p class="text-xs text-slate-400">Tandai ⭐ di tab Kode & Counter</p></div>
+          </div>
+        </div>
+      </div>
+      <div id="gapAlertsSection" class="hidden bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+        <div class="flex items-center gap-2 mb-3"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i><h2 class="text-sm font-bold text-navy-900 dark:text-white">Deteksi Gap Nomor Urut</h2></div>
+        <div id="gapAlertsList" class="space-y-2 text-xs"></div>
+      </div>
+    </div>
+
+    <!-- GENERATE -->
+    <div id="tab-generate" class="tab-content hidden fade-slide space-y-6">
+      <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Buat Nomor Surat</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Isi form untuk menerbitkan nomor resmi</p></div>
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div class="xl:col-span-7 bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-6">
+          <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-100 dark:border-navy-800">
+            <h2 class="text-sm font-bold text-navy-900 dark:text-white">Form Penomoran</h2>
+            <span class="text-[10px] font-semibold px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800"><i class="fa-solid fa-circle-check mr-1 text-[8px]"></i>Auto Counter</span>
+          </div>
+          <form id="letterForm" onsubmit="event.preventDefault();saveLetter();" class="space-y-4">
+            <div class="bg-slate-50 dark:bg-navy-800/50 p-4 rounded-xl border border-slate-200 dark:border-navy-700 space-y-3">
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">1. Kode Klasifikasi Arsip</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5 font-medium">Kategori / Bidang</label>
+                  <select id="selectMainCategory" onchange="filterClassificationCodes()" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200">
+                    <option value="ALL">— Semua Bidang —</option>
+                    <optgroup label="Arsip Fasilitatif"><option value="PR">Perencanaan (PR)</option><option value="KU">Keuangan (KU)</option><option value="OT">Organisasi (OT)</option><option value="SA">SDM Aparatur (SA)</option><option value="PB">BMN (PB)</option><option value="KS">Kerja Sama (KS)</option><option value="HK">Hukum (HK)</option><option value="UM">Umum (UM)</option><option value="PW">Pengawasan (PW)</option><option value="TI">Teknologi (TI)</option></optgroup>
+                    <optgroup label="Arsip Substantif"><option value="PK">Pemasyarakatan (PK)</option><option value="GR">Keimigrasian (GR)</option><option value="SM">SDM Imipas (SM)</option><option value="PS">Strategi Kebijakan (PS)</option></optgroup>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5 font-medium">Kode Tersier <span class="text-red-500">*</span></label>
+                  <select id="selectClassification" required onchange="updateNumberPreview()" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm font-mono font-medium outline-none dark:text-slate-200"></select>
+                </div>
+              </div>
+              <p id="codeDescription" class="text-xs text-slate-500 italic bg-white dark:bg-navy-900 p-2.5 rounded-lg border border-slate-200 dark:border-navy-700">Deskripsi kode…</p>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Template Perihal Cepat</label>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="applyTemplate('Laporan Penelitian Kemasyarakatan (Litmas)')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Litmas</button>
+                <button type="button" onclick="applyTemplate('Pendampingan Diversi / Keadilan Restoratif Anak')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Diversi</button>
+                <button type="button" onclick="applyTemplate('Laporan Bimbingan Klien / Pengawasan (PB/CB/CMB)')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Bimbingan Klien</button>
+                <button type="button" onclick="applyTemplate('Surat Keterangan / Rekomendasi')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Keterangan</button>
+                <button type="button" onclick="applyTemplate('Laporan Kegiatan / Pertanggungjawaban')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Laporan</button>
+                <button type="button" onclick="applyTemplate('Permohonan / Usulan')" class="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-slate-100 dark:bg-navy-800 text-slate-600 dark:text-slate-300 hover:bg-bank-50 hover:text-bank-700 transition border border-slate-200 dark:border-navy-700">Permohonan</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Tanggal (WIB) <span class="text-red-500">*</span></label><input type="date" id="inputDate" required onchange="updateNumberPreview()" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"></div>
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Sifat</label><select id="inputSifat" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"><option value="Biasa">Biasa</option><option value="Penting">Penting</option><option value="Segera">Segera</option><option value="Sangat Segera">Sangat Segera</option><option value="Rahasia">Rahasia</option></select></div>
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Lampiran</label><input type="text" id="inputLampiran" placeholder="1 Berkas / —" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"></div>
+            </div>
+            <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Tujuan / Kepada Yth. <span class="text-red-500">*</span></label><input type="text" id="inputRecipient" required placeholder="Kepala Kantor Wilayah Kemenimipas Sumsel" list="recipientSuggestions" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"><datalist id="recipientSuggestions"></datalist></div>
+            <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Hal / Perihal <span class="text-red-500">*</span></label><textarea id="inputSubject" required rows="2" placeholder="Perihal surat…" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none resize-none dark:text-slate-200"></textarea></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Sub Seksi / Pembuat</label><select id="inputSection" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"><option value="Subseksi Bimbingan Klien Dewasa (BKD)">Subseksi BKD</option><option value="Subseksi Bimbingan Klien Anak (BKA)">Subseksi BKA</option><option value="Urusan Tata Usaha (TU)">Urusan TU</option><option value="Pembimbing Kemasyarakatan (PK) Pertama">PK Pertama</option><option value="Pembimbing Kemasyarakatan (PK) Muda">PK Muda</option><option value="Pembimbing Kemasyarakatan (PK) Madya">PK Madya</option><option value="Kepala Bapas Kelas II Lahat">Kepala Bapas</option></select></div>
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Catatan</label><input type="text" id="inputNotes" placeholder="No. berkas / catatan Srikandi" class="input-field w-full bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"></div>
+            </div>
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-navy-800">
+              <button type="button" onclick="resetForm()" class="px-4 py-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-navy-800 rounded-xl font-medium text-sm transition">Reset</button>
+              <button type="submit" class="btn-primary px-6 py-2.5 text-white rounded-xl font-semibold text-sm flex items-center gap-2 shadow-sm"><i class="fa-solid fa-save text-xs"></i> Simpan & Terbitkan</button>
+            </div>
+          </form>
+        </div>
+        <div class="xl:col-span-5 space-y-4">
+          <div class="number-card text-white rounded-2xl p-6 shadow-bank-lg relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 opacity-[0.06] text-8xl leading-none"><i class="fa-solid fa-stamp"></i></div>
+            <div class="relative z-10">
+              <div class="flex items-center justify-between text-[10px] mb-3"><span class="uppercase tracking-[0.12em] font-semibold text-bank-300">Nomor Resmi</span><span class="bg-white/10 px-2 py-0.5 rounded text-[10px] font-mono border border-white/10">Bapas Lahat</span></div>
+              <div class="my-4 bg-black/20 p-4 rounded-xl border border-white/10 text-center">
+                <p class="text-[10px] text-slate-400 uppercase tracking-wider mb-1.5">Nomor Surat Diterbitkan</p>
+                <p id="previewFullNumber" class="text-base sm:text-lg font-mono font-bold text-bank-300 tracking-wide break-all leading-snug">WP.6.PAS22.UM.01.01-0001</p>
+              </div>
+              <div class="space-y-2 text-xs text-slate-400 mb-5">
+                <div class="flex justify-between"><span>Kode UPT</span><span class="font-mono text-white/90">WP.6.PAS22</span></div>
+                <div class="flex justify-between"><span>Kode Tersier</span><span id="previewTertiaryCode" class="font-mono text-bank-300">UM.01.01</span></div>
+                <div class="flex justify-between"><span>Nomor Urut</span><span id="previewCounterNumber" class="font-mono text-emerald-400 font-bold">0001</span></div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="copyGeneratedNumber()" class="flex-1 py-2.5 bg-bank-500 hover:bg-bank-400 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-copy"></i> Salin</button>
+                <button onclick="openPrintKopModal()" class="py-2.5 px-3.5 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-white/10"><i class="fa-solid fa-print"></i> Kop</button>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white dark:bg-navy-900 rounded-2xl p-5 shadow-bank border border-slate-200/80 dark:border-navy-800">
+            <h3 class="text-[11px] font-bold text-navy-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-circle-info text-bank-500"></i> Ringkasan Aturan</h3>
+            <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-2 leading-relaxed">
+              <li class="flex gap-2"><span class="text-bank-500">•</span><span>Permen Imipas No. 8/2026 efektif <strong class="text-slate-700 dark:text-slate-300">01 Agustus 2026</strong></span></li>
+              <li class="flex gap-2"><span class="text-bank-500">•</span><span>Reset nomor dari <strong class="text-slate-700 dark:text-slate-300">1</strong> per kode tersier</span></li>
+              <li class="flex gap-2"><span class="text-bank-500">•</span><span>Waktu otomatis <strong class="text-slate-700 dark:text-slate-300">WIB</strong> · Sinkron multi-perangkat</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENDA -->
+    <div id="tab-agenda" class="tab-content hidden fade-slide space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Agenda Surat Keluar</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Arsip penomoran · Zona waktu WIB</p></div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportToCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> CSV</button>
+          <button onclick="window.print()" class="px-3.5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5"><i class="fa-solid fa-print"></i> Cetak</button>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-4 sm:p-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div class="relative sm:col-span-2"><i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i><input type="text" id="searchKeyword" onkeyup="renderAgendaTable()" placeholder="Cari nomor, perihal, tujuan…" class="input-field w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-navy-600 bg-white dark:bg-navy-800 rounded-xl text-sm outline-none dark:text-slate-200"></div>
+          <div><select id="filterCodeCategory" onchange="renderAgendaTable()" class="input-field w-full border border-slate-300 dark:border-navy-600 bg-white dark:bg-navy-800 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-slate-200"><option value="ALL">— Semua Kode —</option></select></div>
+          <div class="flex gap-2"><input type="date" id="filterDateFrom" onchange="renderAgendaTable()" class="input-field flex-1 border border-slate-300 dark:border-navy-600 bg-white dark:bg-navy-800 rounded-xl px-2 py-2.5 text-xs outline-none dark:text-slate-200" title="Dari"><input type="date" id="filterDateTo" onchange="renderAgendaTable()" class="input-field flex-1 border border-slate-300 dark:border-navy-600 bg-white dark:bg-navy-800 rounded-xl px-2 py-2.5 text-xs outline-none dark:text-slate-200" title="Sampai"></div>
+        </div>
+        <div class="overflow-x-auto custom-scrollbar rounded-xl border border-slate-200 dark:border-navy-700">
+          <table class="w-full text-left text-xs">
+            <thead><tr class="bg-navy-900 dark:bg-navy-950 text-white font-semibold uppercase tracking-wider text-[10px]">
+              <th class="p-3 w-10 text-center">No</th><th class="p-3">Nomor Surat</th><th class="p-3">Tanggal</th><th class="p-3">Waktu</th><th class="p-3">Tujuan</th><th class="p-3">Perihal</th><th class="p-3">Sifat</th><th class="p-3">Seksi</th><th class="p-3 text-center no-print">Aksi</th>
+            </tr></thead>
+            <tbody id="agendaTableBody" class="divide-y divide-slate-100 dark:divide-navy-800 bg-white dark:bg-navy-900 text-slate-700 dark:text-slate-300"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="hidden text-center py-14"><div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 dark:bg-navy-800 flex items-center justify-center"><i class="fa-solid fa-folder-open text-2xl text-slate-300 dark:text-slate-600"></i></div><p class="text-sm font-semibold text-slate-500">Belum ada data</p></div>
+        <div id="agendaCount" class="mt-3 text-xs text-slate-400"></div>
+      </div>
+    </div>
+
+    <!-- COUNTERS -->
+    <div id="tab-counters" class="tab-content hidden fade-slide space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Kode & Counter</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Status counter per kode tersier · Klik ⭐ untuk favorit</p></div>
+        <button onclick="openAddCodeModal()" class="btn-primary px-4 py-2 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Tambah Kode</button>
+      </div>
+      <div id="counterGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- STATISTIK -->
+    <div id="tab-statistik" class="tab-content hidden fade-slide space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Statistik Kode</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Top 10 kode tersier terpakai</p></div>
+        <div class="flex bg-slate-200/60 dark:bg-navy-800 rounded-xl p-1 gap-0.5">
+          <button onclick="setStatPeriod('weekly')" id="btn-period-weekly" class="stat-period-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400">Mingguan</button>
+          <button onclick="setStatPeriod('monthly')" id="btn-period-monthly" class="stat-period-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400">Bulanan</button>
+          <button onclick="setStatPeriod('yearly')" id="btn-period-yearly" class="stat-period-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400">Tahunan</button>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+        <p id="statPeriodRangeLabel" class="text-xs text-slate-500 mb-4"></p>
+        <div id="statCodeRanking" class="space-y-2.5"></div>
+        <div id="statEmptyState" class="hidden text-center py-14"><i class="fa-solid fa-chart-simple text-3xl text-slate-300 dark:text-slate-600 mb-2"></i><p class="text-sm font-semibold text-slate-500">Belum ada data</p></div>
+      </div>
+    </div>
+
+    <!-- TOOLS -->
+    <div id="tab-tools" class="tab-content hidden fade-slide space-y-6">
+      <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Alat & Backup</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Cadangan data, impor, dan utilitas</p></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+          <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 flex items-center justify-center"><i class="fa-solid fa-download"></i></div><div><h3 class="text-sm font-bold text-navy-900 dark:text-white">Backup JSON</h3><p class="text-xs text-slate-500">Unduh seluruh data</p></div></div>
+          <button onclick="exportJSONBackup()" class="w-full py-2.5 btn-primary text-white rounded-xl text-xs font-semibold">Unduh Backup</button>
+        </div>
+        <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+          <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-bank-600 flex items-center justify-center"><i class="fa-solid fa-upload"></i></div><div><h3 class="text-sm font-bold text-navy-900 dark:text-white">Impor Backup</h3><p class="text-xs text-slate-500">Pulihkan dari file JSON</p></div></div>
+          <label class="w-full py-2.5 bg-slate-100 dark:bg-navy-800 hover:bg-slate-200 dark:hover:bg-navy-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition"><i class="fa-solid fa-file-import"></i> Pilih File JSON<input type="file" accept=".json,application/json" onchange="importJSONBackup(event)" class="hidden"></label>
+        </div>
+        <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+          <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-file-excel"></i></div><div><h3 class="text-sm font-bold text-navy-900 dark:text-white">Ekspor CSV</h3><p class="text-xs text-slate-500">Format spreadsheet</p></div></div>
+          <button onclick="exportToCSV()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition">Ekspor CSV</button>
+        </div>
+        <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+          <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center"><i class="fa-solid fa-magnifying-glass-chart"></i></div><div><h3 class="text-sm font-bold text-navy-900 dark:text-white">Cek Gap Nomor</h3><p class="text-xs text-slate-500">Deteksi nomor terlewati</p></div></div>
+          <button onclick="runGapDetection();switchTab('tab-dashboard')" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition">Jalankan Deteksi</button>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-5">
+        <h3 class="text-sm font-bold text-navy-900 dark:text-white mb-2">Pintasan Keyboard</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-500">
+          <div class="flex items-center gap-2"><kbd class="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 rounded font-mono text-[10px] border border-slate-200 dark:border-navy-700">Ctrl+N</kbd> Buat nomor baru</div>
+          <div class="flex items-center gap-2"><kbd class="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 rounded font-mono text-[10px] border border-slate-200 dark:border-navy-700">Ctrl+K</kbd> Fokus pencarian</div>
+          <div class="flex items-center gap-2"><kbd class="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 rounded font-mono text-[10px] border border-slate-200 dark:border-navy-700">Ctrl+S</kbd> Sinkronkan data</div>
+          <div class="flex items-center gap-2"><kbd class="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 rounded font-mono text-[10px] border border-slate-200 dark:border-navy-700">Esc</kbd> Tutup modal</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tab-content hidden fade-slide space-y-4">
+      <div><h1 class="text-xl font-bold text-navy-900 dark:text-white">Pengaturan</h1><p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Format penomoran dan manajemen data</p></div>
+      <div class="bg-white dark:bg-navy-900 rounded-2xl shadow-bank border border-slate-200/80 dark:border-navy-800 p-6 max-w-2xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-navy-800/50 rounded-xl border border-slate-200 dark:border-navy-700">
+          <div><h4 class="text-sm font-bold text-navy-900 dark:text-white">Format Digit Nomor Urut</h4><p class="text-xs text-slate-500 mt-0.5">Padding nol di depan</p></div>
+          <select id="settingNumberFormat" onchange="saveSettings()" class="input-field bg-white dark:bg-navy-900 border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2 text-xs font-mono font-bold outline-none dark:text-slate-200 min-w-[160px]"><option value="pad4">4 Digit (0001)</option><option value="pad3">3 Digit (001)</option><option value="raw">Tanpa Pad (1)</option></select>
+        </div>
+        <div class="p-4 bg-slate-50 dark:bg-navy-800/50 rounded-xl border border-slate-200 dark:border-navy-700">
+          <h4 class="text-sm font-bold text-navy-900 dark:text-white mb-1">Kode Prefix UPT</h4>
+          <p class="text-xs text-slate-500 mb-3">SK WP.6-0763.UM.01.01 TAHUN 2026</p>
+          <input type="text" id="settingUptPrefix" value="WP.6.PAS22" readonly class="w-full bg-slate-200/80 dark:bg-navy-800 text-slate-600 dark:text-slate-400 font-mono font-bold border border-slate-300 dark:border-navy-600 rounded-xl px-3 py-2.5 text-sm cursor-not-allowed">
+        </div>
+        <div class="border-t border-slate-100 dark:border-navy-800 pt-5 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+          <div><h4 class="text-sm font-bold text-navy-900 dark:text-white">Manajemen Data</h4><p class="text-xs text-slate-500 mt-0.5">LocalStorage + Google Sheets</p></div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="restoreDefaultData()" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition"><i class="fa-solid fa-rotate-left mr-1"></i> Default</button>
+            <button onclick="clearAllData()" class="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i> Hapus Semua</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- MODALS -->
+<div id="guidelineModal" class="fixed inset-0 bg-navy-950/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-navy-900 rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-navy-700 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-navy-800">
+      <h3 class="text-base font-bold text-navy-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-scroll text-amber-500"></i> Pedoman Penomoran</h3>
+      <button onclick="toggleGuidelineModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="text-xs text-slate-700 dark:text-slate-300 space-y-4 my-5 leading-relaxed">
+      <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+        <strong class="block mb-2 text-amber-950 dark:text-amber-200">Dasar Hukum</strong>
+        <ul class="list-disc list-inside space-y-1 text-amber-900/90 dark:text-amber-300/90">
+          <li>Permen Imipas Nomor 8 Tahun 2026</li>
+          <li>Keputusan Kakanwil Sumsel WP.6-0763.UM.01.01 TAHUN 2026</li>
+          <li>SE Kanwil Sumsel WP.6.UM.01.01-0924</li>
+        </ul>
+      </div>
+      <ol class="list-decimal list-inside space-y-2">
+        <li>Berlaku efektif <strong>01 Agustus 2026</strong>.</li>
+        <li>Kode UPT: <strong>WP.6.PAS22</strong>.</li>
+        <li class="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg font-semibold text-blue-950 dark:text-blue-200">RESET nomor dari 1 pada setiap kode tersier permasalahan surat.</li>
+      </ol>
+    </div>
+    <div class="pt-3 border-t border-slate-100 dark:border-navy-800 flex justify-end"><button onclick="toggleGuidelineModal()" class="btn-primary px-5 py-2 text-white rounded-xl text-xs font-semibold">Saya Mengerti</button></div>
+  </div>
+</div>
+
+<div id="kopPreviewModal" class="fixed inset-0 bg-navy-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-navy-900 rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-navy-700 max-h-[92vh] overflow-y-auto">
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-navy-800 no-print">
+      <h3 class="text-sm font-bold text-navy-900 dark:text-white">Pratinjau Kop Surat</h3>
+      <div class="flex gap-2">
+        <button onclick="window.print()" class="px-3.5 py-1.5 bg-bank-600 hover:bg-bank-700 text-white text-xs font-bold rounded-xl transition"><i class="fa-solid fa-print mr-1"></i> Cetak/PDF</button>
+        <button onclick="closeKopModal()" class="px-3.5 py-1.5 bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl">Tutup</button>
+      </div>
+    </div>
+    <div class="p-6 bg-white border border-slate-300 rounded-lg text-slate-900 font-serif">
+      <div class="text-center border-b-4 border-double border-black pb-3 mb-6">
+        <p class="text-xs uppercase font-bold tracking-widest leading-tight">KEMENTERIAN IMIGRASI DAN PEMASYARAKATAN</p>
+        <p class="text-xs uppercase font-bold tracking-wider leading-tight">REPUBLIK INDONESIA</p>
+        <p class="text-xs uppercase font-semibold leading-tight">DIREKTORAT JENDERAL PEMASYARAKATAN</p>
+        <p class="text-xs uppercase font-semibold leading-tight">KANTOR WILAYAH SUMATERA SELATAN</p>
+        <h2 class="text-base uppercase font-extrabold tracking-wide my-1.5">BALAI PEMASYARAKATAN KELAS II LAHAT</h2>
+        <p class="text-[10px] font-sans italic text-slate-600">Jalan Kolonel Burlian Bandar Jaya, Kabupaten Lahat, Sumatera Selatan<br>Laman: bapaslahat.kemenimipas.go.id · Email: bapaslahat@kemenimipas.go.id</p>
+      </div>
+      <div class="grid grid-cols-12 text-xs font-sans mb-6">
+        <div class="col-span-7 space-y-1">
+          <div class="grid grid-cols-12"><span class="col-span-3 font-semibold">Nomor</span><span class="col-span-1">:</span><span id="kopNomor" class="col-span-8 font-bold font-mono">—</span></div>
+          <div class="grid grid-cols-12"><span class="col-span-3 font-semibold">Sifat</span><span class="col-span-1">:</span><span id="kopSifat" class="col-span-8">Biasa</span></div>
+          <div class="grid grid-cols-12"><span class="col-span-3 font-semibold">Lampiran</span><span class="col-span-1">:</span><span id="kopLampiran" class="col-span-8">—</span></div>
+          <div class="grid grid-cols-12"><span class="col-span-3 font-semibold">Hal</span><span class="col-span-1">:</span><span id="kopHal" class="col-span-8 font-bold">—</span></div>
+        </div>
+        <div class="col-span-5 text-right font-sans"><p id="kopTanggal">Lahat, —</p></div>
+      </div>
+      <div class="text-xs font-sans space-y-1 mb-8"><p>Yth.</p><p id="kopTujuan" class="font-bold">—</p><p>di Tempat</p></div>
+      <div class="text-xs font-sans text-slate-400 py-12 border-2 border-dashed border-slate-200 text-center rounded-lg">[ Isi Surat Naskah Dinas ]</div>
+      <div class="grid grid-cols-12 text-xs font-sans mt-8"><div class="col-span-7"></div><div class="col-span-5 text-center space-y-12"><p>Kepala Balai Pemasyarakatan Kelas II Lahat,</p><p class="font-bold underline uppercase pt-8">( NAMA KEPALA BAPAS )</p></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="letterListModal" class="fixed inset-0 bg-navy-950/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-navy-900 rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 dark:border-navy-700 max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-navy-800 flex-shrink-0">
+      <h3 id="letterListModalTitle" class="text-sm font-bold text-navy-900 dark:text-white">Detail</h3>
+      <button onclick="closeLetterListModal()" class="px-3 py-1.5 bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl">Tutup</button>
+    </div>
+    <div class="overflow-y-auto custom-scrollbar flex-grow">
+      <table class="w-full text-left text-xs"><thead><tr class="bg-slate-100 dark:bg-navy-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] sticky top-0"><th class="p-2.5 w-8 text-center">No</th><th class="p-2.5">Nomor</th><th class="p-2.5">Tanggal</th><th class="p-2.5">Tujuan</th><th class="p-2.5">Perihal</th></tr></thead>
+      <tbody id="letterListModalBody" class="divide-y divide-slate-100 dark:divide-navy-800"></tbody></table>
+      <div id="letterListModalEmpty" class="hidden text-center py-10 text-xs text-slate-400">Tidak ada data.</div>
+    </div>
+  </div>
+</div>
+
+<div id="editLetterModal" class="fixed inset-0 bg-navy-950/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-navy-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-navy-700 max-h-[92vh] overflow-y-auto">
+    <div class="pb-3 mb-4 border-b border-slate-100 dark:border-navy-800"><h3 class="text-base font-bold text-navy-900 dark:text-white">Edit Data Surat</h3><p id="editLetterNumberLabel" class="text-xs font-mono text-bank-600 dark:text-bank-400 font-bold mt-0.5"></p></div>
+    <p class="text-[11px] text-slate-500 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-xl p-2.5 mb-4"><i class="fa-solid fa-circle-info mr-1"></i> Kode tersier tidak dapat diubah. Nomor urut dapat diedit untuk sisipan (mis. <span class="font-mono">0003.1</span>).</p>
+    <form id="editLetterForm" onsubmit="event.preventDefault();saveEditedLetter();" class="space-y-3.5 text-xs">
+      <input type="hidden" id="editLetterId">
+      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3.5">
+        <label class="block font-semibold mb-1.5 text-amber-900 dark:text-amber-200"><i class="fa-solid fa-hashtag mr-1"></i>Nomor Resmi</label>
+        <div class="flex items-center gap-1.5 flex-wrap"><span id="editPrefixCodeLabel" class="font-mono text-slate-500 text-xs"></span><span class="font-mono text-slate-400">—</span><input type="text" id="editInputSequence" oninput="updateEditPreviewFullNumber()" placeholder="0003.1" class="input-field border border-amber-300 dark:border-amber-700 rounded-lg px-2.5 py-1.5 text-sm font-mono font-bold w-28 outline-none dark:bg-navy-900 dark:text-slate-200"></div>
+        <p class="text-[11px] text-amber-800 dark:text-amber-300 mt-2">Lengkap: <span id="editPreviewFullNumber" class="font-mono font-bold"></span></p>
+      </div>
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Tanggal</label><input type="date" id="editInputDate" required class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Sifat</label><select id="editInputSifat" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"><option value="Biasa">Biasa</option><option value="Penting">Penting</option><option value="Segera">Segera</option><option value="Sangat Segera">Sangat Segera</option><option value="Rahasia">Rahasia</option></select></div>
+        <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Lampiran</label><input type="text" id="editInputLampiran" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      </div>
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Tujuan</label><input type="text" id="editInputRecipient" required class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Perihal</label><textarea id="editInputSubject" required rows="2" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none resize-none dark:bg-navy-800 dark:text-slate-200"></textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Sub Seksi</label><select id="editInputSection" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"><option value="Subseksi Bimbingan Klien Dewasa (BKD)">Subseksi BKD</option><option value="Subseksi Bimbingan Klien Anak (BKA)">Subseksi BKA</option><option value="Urusan Tata Usaha (TU)">Urusan TU</option><option value="Pembimbing Kemasyarakatan (PK) Pertama">PK Pertama</option><option value="Pembimbing Kemasyarakatan (PK) Muda">PK Muda</option><option value="Pembimbing Kemasyarakatan (PK) Madya">PK Madya</option><option value="Kepala Bapas Kelas II Lahat">Kepala Bapas</option></select></div>
+        <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Catatan</label><input type="text" id="editInputNotes" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 text-sm outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      </div>
+      <div class="pt-3 flex justify-end gap-2 border-t border-slate-100 dark:border-navy-800">
+        <button type="button" onclick="closeEditLetterModal()" class="px-4 py-2 bg-slate-100 dark:bg-navy-800 rounded-xl font-semibold">Batal</button>
+        <button type="submit" class="btn-primary px-4 py-2 text-white rounded-xl font-semibold"><i class="fa-solid fa-save mr-1"></i>Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="addCodeModal" class="fixed inset-0 bg-navy-950/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-navy-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-navy-700">
+    <h3 class="text-base font-bold text-navy-900 dark:text-white mb-4 pb-3 border-b border-slate-100 dark:border-navy-800">Tambah Kode Tersier</h3>
+    <form onsubmit="event.preventDefault();saveCustomCode();" class="space-y-3.5 text-xs">
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Kategori</label>
+        <select id="modalCodeCategory" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 outline-none dark:bg-navy-800 dark:text-slate-200">
+          <optgroup label="Arsip Fasilitatif"><option value="PR">PR — Perencanaan</option><option value="KU">KU — Keuangan</option><option value="OT">OT — Organisasi</option><option value="SA">SA — SDM</option><option value="PB">PB — BMN</option><option value="KS">KS — Kerja Sama</option><option value="HK">HK — Hukum</option><option value="UM">UM — Umum</option><option value="PW">PW — Pengawasan</option><option value="TI">TI — Teknologi</option></optgroup>
+          <optgroup label="Arsip Substantif"><option value="PK">PK — Pemasyarakatan</option><option value="GR">GR — Keimigrasian</option><option value="SM">SM — SDM Imipas</option><option value="PS">PS — Strategi</option></optgroup>
+        </select>
+      </div>
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Kode Tersier</label><input type="text" id="modalCodeNumber" required placeholder="PK.01.04" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 font-mono uppercase outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      <div><label class="block font-semibold mb-1.5 dark:text-slate-300">Deskripsi</label><input type="text" id="modalCodeDesc" required placeholder="Deskripsi kode" class="input-field w-full border border-slate-300 dark:border-navy-600 rounded-xl p-2.5 outline-none dark:bg-navy-800 dark:text-slate-200"></div>
+      <div class="pt-3 flex justify-end gap-2"><button type="button" onclick="closeAddCodeModal()" class="px-4 py-2 bg-slate-100 dark:bg-navy-800 rounded-xl font-semibold">Batal</button><button type="submit" class="btn-primary px-4 py-2 text-white rounded-xl font-semibold">Simpan</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-5 right-5 bg-navy-900 dark:bg-navy-800 text-white px-4 py-3 rounded-2xl shadow-bank-lg z-50 hidden flex items-center gap-3 border border-navy-700 max-w-sm">
+  <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 shrink-0"></i>
+  <span id="toastMessage" class="text-xs font-semibold leading-snug">…</span>
+</div>
+
+<script src="app.js"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('Service Worker terdaftar:', reg.scope);
+    }).catch(err => console.log('SW gagal:', err));
+  });
+}
+</script>
+
+</body>
+</html>
