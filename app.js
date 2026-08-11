@@ -23,7 +23,7 @@ function getWIBFullTimestamp(){return`${getWIBDateString()} ${getWIBTimeString()
 function startLiveWIBClock(){setInterval(()=>{const el=document.getElementById('liveClockDisplay');if(el)el.innerText=getWIBTimeString()},1000)}
 document.addEventListener('DOMContentLoaded',()=>{
   if(localStorage.getItem('bapas_dark')==='1'||(!localStorage.getItem('bapas_dark')&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');
-  loadStateFromStorage();setTodayDateInForm();populateClassificationOptions();updateNumberPreview();
+  loadStateFromStorage();setTodayDateInForm();populateClassificationOptions();onExportPeriodTypeChange();updateExportPreview();updateNumberPreview();
   renderDashboardStats();renderAgendaTable();renderCounterGrid();renderRecentLetters();renderFavoriteCodes();
   setStatPeriod('monthly');startLiveWIBClock();fetchDataFromGoogleSheets();startAutoSync();updateRecipientSuggestions();
 });
@@ -48,6 +48,18 @@ function populateClassificationOptions(){
   const list=cat==='ALL'?classifications:classifications.filter(c=>c.category===cat);
   list.forEach(i=>{const o=document.createElement('option');o.value=i.code;o.innerText=`${i.code} — ${i.description}`;sel.appendChild(o)});
   classifications.forEach(i=>{const o=document.createElement('option');o.value=i.code;o.innerText=i.code;filt.appendChild(o)});
+  const expSel=document.getElementById('exportCodeSelect');
+  if(expSel){
+    const cur=expSel.value||'ALL';
+    expSel.innerHTML='<option value="ALL">— Semua Kode —</option>';
+    classifications.forEach(i=>{
+      const o=document.createElement('option');
+      o.value=i.code;
+      o.innerText=i.code+' — '+(i.description||'').substring(0,40);
+      expSel.appendChild(o);
+    });
+    expSel.value=cur;
+  }
   updateCodeDescription();
 }
 function filterClassificationCodes(){populateClassificationOptions();updateNumberPreview()}
@@ -83,7 +95,7 @@ async function fetchDataFromGoogleSheets(silent=false){
 }
 function markSynced(){const el=document.getElementById('lastSyncLabel');if(el)el.innerText='Baru saja · '+getWIBTimeString()+' WIB';const ind=document.getElementById('syncIndicator');if(ind)ind.className='w-2 h-2 rounded-full bg-emerald-500 pulse-dot shrink-0'}
 function resetForm(){document.getElementById('letterForm').reset();setTodayDateInForm();updateNumberPreview()}
-function renderDashboardStats(){const today=getWIBDateString(),month=today.substring(0,7);document.getElementById('statToday').innerText=letterLogs.filter(l=>l.date===today).length;document.getElementById('statMonth').innerText=letterLogs.filter(l=>l.date&&l.date.startsWith(month)).length;document.getElementById('statCodes').innerText=classifications.length;renderStatistikTab();runGapDetection(true)}
+function renderDashboardStats(){const today=getWIBDateString(),month=today.substring(0,7);document.getElementById('statToday').innerText=letterLogs.filter(l=>l.date===today).length;document.getElementById('statMonth').innerText=letterLogs.filter(l=>l.date&&l.date.startsWith(month)).length;document.getElementById('statCodes').innerText=classifications.length;renderStatistikTab();runGapDetection(true);if(typeof updateExportPreview==='function')updateExportPreview()}
 function renderRecentLetters(){
   const list=document.getElementById('recentLettersList'),empty=document.getElementById('recentEmpty'),recent=letterLogs.slice(0,6);
   list.innerHTML='';if(!recent.length){empty.classList.remove('hidden');return}empty.classList.add('hidden');
@@ -138,7 +150,7 @@ function updateEditPreviewFullNumber(){const p=document.getElementById('editPref
 async function saveEditedLetter(){const id=document.getElementById('editLetterId').value,idx=letterLogs.findIndex(l=>l.id===id);if(idx<0){showToast('Tidak ditemukan','error');return}const seq=document.getElementById('editInputSequence').value.trim();if(!seq){showToast('Nomor urut wajib diisi','error');return}const cur=letterLogs[idx],prefix=`${cur.uptPrefix||settings.uptPrefix}.${cur.tertiaryCode||''}`,full=`${prefix}-${seq}`;if(letterLogs.some(l=>l.id!==id&&l.fullNumber===full)){showToast('Nomor sudah dipakai','error');return}const parsed=parseInt(seq,10);const fields={date:document.getElementById('editInputDate').value,sifat:document.getElementById('editInputSifat').value,lampiran:document.getElementById('editInputLampiran').value||'—',recipient:document.getElementById('editInputRecipient').value,subject:document.getElementById('editInputSubject').value,section:document.getElementById('editInputSection').value,notes:document.getElementById('editInputNotes').value||'—',formattedSequence:seq,fullNumber:full,counterNumber:isNaN(parsed)?cur.counterNumber:parsed};letterLogs[idx]={...letterLogs[idx],...fields};recalculateTertiaryCounters();saveStateToStorage();renderAgendaTable();renderDashboardStats();renderCounterGrid();renderRecentLetters();updateNumberPreview();closeEditLetterModal();showToast('Menyimpan…','info');try{await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'update',id,...fields})});showToast('Perubahan tersimpan')}catch(e){showToast('Lokal OK, gagal sinkron','error')}}
 function duplicateLetter(id){const log=letterLogs.find(l=>l.id===id);if(!log)return;switchTab('tab-generate');const item=classifications.find(c=>c.code===log.tertiaryCode);if(item){document.getElementById('selectMainCategory').value=item.category;populateClassificationOptions();document.getElementById('selectClassification').value=log.tertiaryCode}document.getElementById('inputSifat').value=log.sifat||'Biasa';document.getElementById('inputLampiran').value=log.lampiran||'';document.getElementById('inputRecipient').value=log.recipient||'';document.getElementById('inputSubject').value=log.subject||'';document.getElementById('inputSection').value=log.section||'';document.getElementById('inputNotes').value=log.notes||'';setTodayDateInForm();updateNumberPreview();showToast('Form diisi dari surat sebelumnya. Nomor baru di-generate saat simpan.','info')}
 async function deleteLetter(id){if(!confirm('Hapus arsip surat ini?'))return;letterLogs=letterLogs.filter(l=>l.id!==id);recalculateTertiaryCounters();saveStateToStorage();renderAgendaTable();renderDashboardStats();renderCounterGrid();renderRecentLetters();updateNumberPreview();showToast('Menghapus…','info');try{await fetch(WEB_APP_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});showToast('Berhasil dihapus')}catch(e){showToast('Lokal OK, gagal sinkron','error')}}
-function exportToCSV(){if(!letterLogs.length){showToast('Tidak ada data','error');return}let csv="data:text/csv;charset=utf-8,";csv+="No,Nomor Surat,Tanggal,Waktu Input,Sifat,Lampiran,Tujuan,Perihal,Seksi,Catatan\n";letterLogs.forEach((l,i)=>{csv+=[i+1,`"${l.fullNumber}"`,`"${l.date}"`,`"${l.timestamp||''}"`,`"${l.sifat}"`,`"${l.lampiran}"`,`"${(l.recipient||'').replace(/"/g,'""')}"`,`"${(l.subject||'').replace(/"/g,'""')}"`,`"${l.section}"`,`"${(l.notes||'').replace(/"/g,'""')}"`].join(',')+'\n'});const a=document.createElement('a');a.href=encodeURI(csv);a.download=`Agenda_Surat_Bapas_Lahat_${getWIBDateString()}.csv`;a.click()}
+/* exportToCSV diganti di bawah (versi terfilter) */let csv="data:text/csv;charset=utf-8,";csv+="No,Nomor Surat,Tanggal,Waktu Input,Sifat,Lampiran,Tujuan,Perihal,Seksi,Catatan\n";letterLogs.forEach((l,i)=>{csv+=[i+1,`"${l.fullNumber}"`,`"${l.date}"`,`"${l.timestamp||''}"`,`"${l.sifat}"`,`"${l.lampiran}"`,`"${(l.recipient||'').replace(/"/g,'""')}"`,`"${(l.subject||'').replace(/"/g,'""')}"`,`"${l.section}"`,`"${(l.notes||'').replace(/"/g,'""')}"`].join(',')+'\n'});const a=document.createElement('a');a.href=encodeURI(csv);a.download=`Agenda_Surat_Bapas_Lahat_${getWIBDateString()}.csv`;a.click()}
 function exportJSONBackup(){const data={exportedAt:getWIBFullTimestamp(),version:2,settings,classifications,letterLogs,favoriteCodes};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Backup_Bapas_Lahat_${getWIBDateString()}.json`;a.click();showToast('Backup JSON diunduh')}
 function importJSONBackup(event){const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const data=JSON.parse(e.target.result);if(!data.letterLogs&&!data.classifications)throw new Error('Format tidak valid');if(!confirm(`Impor backup? Data saat ini diganti.\nSurat: ${(data.letterLogs||[]).length} · Kode: ${(data.classifications||[]).length}`))return;if(data.classifications)classifications=data.classifications;if(data.letterLogs)letterLogs=data.letterLogs;if(data.settings)settings={...settings,...data.settings};if(data.favoriteCodes)favoriteCodes=data.favoriteCodes;recalculateTertiaryCounters();saveStateToStorage();populateClassificationOptions();updateNumberPreview();renderDashboardStats();renderAgendaTable();renderCounterGrid();renderRecentLetters();renderFavoriteCodes();showToast('Backup berhasil diimpor')}catch(err){showToast('File tidak valid: '+err.message,'error')}event.target.value=''};reader.readAsText(file)}
 function saveSettings(){settings.numberFormat=document.getElementById('settingNumberFormat').value;saveStateToStorage();updateNumberPreview();renderCounterGrid();showToast('Pengaturan disimpan')}
@@ -155,3 +167,183 @@ function getSifatBadgeColor(s){switch(s){case'Sangat Segera':return'bg-red-100 d
 function escapeHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 let sharedAudioCtx=null;function playSuccessSound(){try{if(!sharedAudioCtx)sharedAudioCtx=new(window.AudioContext||window.webkitAudioContext)();if(sharedAudioCtx.state==='suspended')sharedAudioCtx.resume();const now=sharedAudioCtx.currentTime;[{freq:880,start:0,dur:.12},{freq:1174.66,start:.11,dur:.22}].forEach(n=>{const o=sharedAudioCtx.createOscillator(),g=sharedAudioCtx.createGain();o.type='sine';o.frequency.value=n.freq;g.gain.setValueAtTime(0,now+n.start);g.gain.linearRampToValueAtTime(.25,now+n.start+.02);g.gain.exponentialRampToValueAtTime(.001,now+n.start+n.dur);o.connect(g);g.connect(sharedAudioCtx.destination);o.start(now+n.start);o.stop(now+n.start+n.dur+.05)})}catch(e){}}
 function showToast(msg,type='success'){const toast=document.getElementById('toast'),icon=document.getElementById('toastIcon');document.getElementById('toastMessage').innerText=msg;if(type==='error')icon.className='fa-solid fa-circle-exclamation text-red-400 shrink-0';else if(type==='info')icon.className='fa-solid fa-circle-info text-blue-400 shrink-0';else icon.className='fa-solid fa-circle-check text-emerald-400 shrink-0';toast.classList.remove('hidden');setTimeout(()=>toast.classList.add('hidden'),3200)}
+
+
+/* ===== EKSPOR TERFILTER PER KODE + PERIODE ===== */
+function getExportDateRange() {
+  const type = (document.getElementById('exportPeriodType') || {}).value || 'all';
+  if (type === 'all') return { start: null, end: null, label: 'Semua waktu' };
+
+  if (type === 'custom') {
+    const from = document.getElementById('exportDateFrom')?.value || '';
+    const to = document.getElementById('exportDateTo')?.value || '';
+    let label = 'Rentang kustom';
+    if (from && to) label = formatIndonesianDate(from) + ' – ' + formatIndonesianDate(to);
+    else if (from) label = 'Dari ' + formatIndonesianDate(from);
+    else if (to) label = 'Sampai ' + formatIndonesianDate(to);
+    return { start: from || null, end: to || null, label };
+  }
+
+  const val = document.getElementById('exportPeriodValue')?.value || '';
+  const today = getWIBDate();
+
+  if (type === 'monthly') {
+    // val = YYYY-MM
+    if (!val) {
+      const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0');
+      const start = y + '-' + m + '-01';
+      const endDate = new Date(y, today.getMonth()+1, 0);
+      const end = toDateStr(endDate);
+      return { start, end, label: val || (y + '-' + m) };
+    }
+    const [y, m] = val.split('-').map(Number);
+    const start = val + '-01';
+    const endDate = new Date(y, m, 0);
+    const end = toDateStr(endDate);
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    return { start, end, label: monthNames[m-1] + ' ' + y };
+  }
+
+  if (type === 'yearly') {
+    // val = YYYY
+    const y = parseInt(val, 10) || today.getFullYear();
+    return { start: y + '-01-01', end: y + '-12-31', label: 'Tahun ' + y };
+  }
+
+  if (type === 'weekly') {
+    // val = YYYY-MM-DD (Senin minggu tersebut) — gunakan input week jika ada, atau date
+    let base;
+    if (val) base = new Date(val + 'T12:00:00');
+    else base = today;
+    const day = base.getDay();
+    const diffMon = day === 0 ? 6 : day - 1;
+    const start = new Date(base);
+    start.setDate(base.getDate() - diffMon);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return {
+      start: toDateStr(start),
+      end: toDateStr(end),
+      label: 'Minggu ' + formatIndonesianDate(toDateStr(start)) + ' – ' + formatIndonesianDate(toDateStr(end))
+    };
+  }
+
+  return { start: null, end: null, label: 'Semua waktu' };
+}
+
+function getFilteredLettersForExport() {
+  const code = document.getElementById('exportCodeSelect')?.value || 'ALL';
+  const range = getExportDateRange();
+  return letterLogs.filter(l => {
+    const matchCode = code === 'ALL' || l.tertiaryCode === code;
+    const matchFrom = !range.start || (l.date && l.date >= range.start);
+    const matchTo = !range.end || (l.date && l.date <= range.end);
+    return matchCode && matchFrom && matchTo;
+  });
+}
+
+function onExportPeriodTypeChange() {
+  const type = document.getElementById('exportPeriodType')?.value || 'all';
+  const pickerWrap = document.getElementById('exportPeriodPickerWrap');
+  const customWrap = document.getElementById('exportCustomRangeWrap');
+  const label = document.getElementById('exportPeriodLabel');
+  const input = document.getElementById('exportPeriodValue');
+  if (!pickerWrap || !input) return;
+
+  const today = getWIBDate();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+
+  if (type === 'all') {
+    pickerWrap.classList.add('hidden');
+    customWrap?.classList.add('hidden');
+  } else if (type === 'custom') {
+    pickerWrap.classList.add('hidden');
+    customWrap?.classList.remove('hidden');
+  } else {
+    pickerWrap.classList.remove('hidden');
+    customWrap?.classList.add('hidden');
+    if (type === 'monthly') {
+      if (label) label.innerText = 'Bulan';
+      input.type = 'month';
+      input.value = yyyy + '-' + mm;
+    } else if (type === 'yearly') {
+      if (label) label.innerText = 'Tahun';
+      input.type = 'number';
+      input.min = '2020';
+      input.max = String(yyyy + 1);
+      input.placeholder = 'YYYY';
+      input.value = String(yyyy);
+    } else if (type === 'weekly') {
+      if (label) label.innerText = 'Tanggal dalam minggu';
+      input.type = 'date';
+      input.value = yyyy + '-' + mm + '-' + dd;
+    }
+  }
+  updateExportPreview();
+}
+
+function updateExportPreview() {
+  const filtered = getFilteredLettersForExport();
+  const range = getExportDateRange();
+  const code = document.getElementById('exportCodeSelect')?.value || 'ALL';
+  const countEl = document.getElementById('exportPreviewCount');
+  const rangeEl = document.getElementById('exportPreviewRange');
+  if (countEl) countEl.innerText = String(filtered.length);
+  if (rangeEl) {
+    const codeLabel = code === 'ALL' ? 'Semua kode' : code;
+    rangeEl.innerText = codeLabel + ' · ' + range.label;
+  }
+}
+
+function exportFilteredCSV() {
+  const filtered = getFilteredLettersForExport();
+  if (!filtered.length) {
+    showToast('Tidak ada data sesuai filter', 'error');
+    return;
+  }
+  const code = document.getElementById('exportCodeSelect')?.value || 'ALL';
+  const range = getExportDateRange();
+  downloadCSV(filtered, code, range);
+  showToast('CSV terfilter diunduh (' + filtered.length + ' surat)');
+}
+
+function downloadCSV(logs, code, range) {
+  let csv = '\uFEFF'; // BOM agar Excel baca UTF-8
+  csv += 'No,Nomor Surat,Tanggal,Waktu Input,Sifat,Lampiran,Tujuan,Perihal,Seksi,Catatan,Kode Tersier\n';
+  logs.forEach((l, i) => {
+    csv += [
+      i + 1,
+      '"' + (l.fullNumber || '') + '"',
+      '"' + (l.date || '') + '"',
+      '"' + (l.timestamp || '') + '"',
+      '"' + (l.sifat || '') + '"',
+      '"' + (l.lampiran || '') + '"',
+      '"' + String(l.recipient || '').replace(/"/g, '""') + '"',
+      '"' + String(l.subject || '').replace(/"/g, '""') + '"',
+      '"' + (l.section || '') + '"',
+      '"' + String(l.notes || '').replace(/"/g, '""') + '"',
+      '"' + (l.tertiaryCode || '') + '"'
+    ].join(',') + '\n';
+  });
+  const codePart = code === 'ALL' ? 'SemuaKode' : code.replace(/\./g, '_');
+  const periodPart = (range && range.label) ? range.label.replace(/\s+/g, '_').replace(/[–—]/g, '-').replace(/[^a-zA-Z0-9_\-]/g, '') : 'Semua';
+  const filename = 'Agenda_' + codePart + '_' + periodPart + '_' + getWIBDateString() + '.csv';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// Override exportToCSV agar memakai downloadCSV yang sama
+function exportToCSV() {
+  if (!letterLogs.length) {
+    showToast('Tidak ada data', 'error');
+    return;
+  }
+  downloadCSV(letterLogs, 'ALL', { label: 'Semua' });
+  showToast('CSV agenda diunduh');
+}
